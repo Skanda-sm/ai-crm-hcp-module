@@ -7,12 +7,20 @@ import uuid
 import models, schemas, database, agent
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 app = FastAPI(title="AI-First CRM HCP Module")
 
 # CORS setup
+# CORSMisconfig fix: Restrict origins based on environment variable
+origins = os.getenv("CORS_ORIGINS", "*").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -75,7 +83,15 @@ async def chat_with_agent(request: schemas.ChatRequest):
             "session_id": session_id
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # ErrorHandling fix: Log the error and return a structured response
+        print(f"Agent error: {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail={
+                "message": "An error occurred while processing your request with the AI agent.",
+                "error_type": type(e).__name__
+            }
+        )
 
 @app.get("/hcps/", response_model=List[schemas.HCP])
 def get_hcps(db: Session = Depends(database.get_db)):

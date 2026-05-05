@@ -25,12 +25,13 @@ const InteractionForm = () => {
             placeholder="Search or select HCP..."
             value={formData.hcp_name || ''}
             onChange={handleChange}
+            aria-label="HCP Name"
           />
         </div>
 
         <div className="form-group">
           <label>Interaction Type</label>
-          <select name="interaction_type" value={formData.interaction_type} onChange={handleChange}>
+          <select name="interaction_type" value={formData.interaction_type || 'Meeting'} onChange={handleChange} aria-label="Interaction Type">
             <option>Meeting</option>
             <option>Call</option>
             <option>Email</option>
@@ -40,12 +41,12 @@ const InteractionForm = () => {
 
         <div className="form-group">
           <label><Calendar size={16} style={{ marginRight: '8px' }} /> Date</label>
-          <input type="date" name="date" value={formData.date} onChange={handleChange} />
+          <input type="date" name="date" value={formData.date || ''} onChange={handleChange} aria-label="Interaction Date" />
         </div>
 
         <div className="form-group">
           <label><Clock size={16} style={{ marginRight: '8px' }} /> Time</label>
-          <input type="time" name="time" value={formData.time} onChange={handleChange} />
+          <input type="time" name="time" value={formData.time || ''} onChange={handleChange} aria-label="Interaction Time" />
         </div>
       </div>
 
@@ -57,6 +58,7 @@ const InteractionForm = () => {
           placeholder="Enter names or search..."
           value={formData.attendees || ''}
           onChange={handleChange}
+          aria-label="Attendees"
         />
       </div>
 
@@ -68,6 +70,7 @@ const InteractionForm = () => {
           placeholder="Enter key discussion points..."
           value={formData.topics_discussed || ''}
           onChange={handleChange}
+          aria-label="Topics Discussed"
         ></textarea>
         <button className="btn-secondary" style={{ 
           marginTop: '0.75rem', 
@@ -101,6 +104,7 @@ const InteractionForm = () => {
             placeholder="Add Sample..."
             value={formData.samples_distributed || ''}
             onChange={handleChange}
+            aria-label="Samples Distributed"
           />
         </div>
       </div>

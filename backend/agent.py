@@ -17,9 +17,12 @@ Your goal is to help field representatives log interactions with Healthcare Prof
 
 When a user describes an interaction:
 1. Extract key fields: hcp_name, interaction_type, date, time, attendees, topics_discussed, sentiment, outcomes, and follow_up_actions.
-2. Use the `log_interaction` tool to save this structured data. Always try to fill as many fields as possible from the user's description.
-3. If information is missing, you can ask the user for it, or leave it blank if it's not crucial.
-4. Inform the user that the form has been updated.
+2. Use the `log_interaction` tool to save this structured data. 
+3. IMPORTANT: Always use the following formats:
+   - date: YYYY-MM-DD (e.g., 2024-05-05). Never use "today" or "yesterday".
+   - time: HH:MM (e.g., 14:30). Never use "unknown" or "morning".
+4. If information is missing, use a sensible default or leave it empty, but NEVER use placeholders like "unknown" or "N/A" for date/time fields.
+5. Inform the user that the form has been updated.
 
 If the user wants to change something, use the `edit_interaction` tool.
 
@@ -56,8 +59,8 @@ def log_interaction(hcp_name: Optional[str] = None,
     data = {
         "hcp_name": hcp_name,
         "interaction_type": interaction_type,
-        "date": date or datetime.date.today().isoformat(),
-        "time": time or datetime.datetime.now().strftime("%H:%M"),
+        "date": date if date and len(date) == 10 and "-" in date else datetime.date.today().isoformat(),
+        "time": time if time and ":" in time else datetime.datetime.now().strftime("%H:%M"),
         "attendees": attendees,
         "topics_discussed": topics_discussed,
         "sentiment": sentiment,
@@ -114,8 +117,11 @@ tools = [log_interaction, edit_interaction, search_hcp, get_materials, suggest_f
 tool_node = ToolNode(tools)
 
 # Initialize the LLM
+# ModelMismatch fix: Use environment variable for model naming
+llm_model = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
+
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model=llm_model,
     groq_api_key=os.getenv("GROQ_API_KEY"),
     temperature=0
 )
@@ -152,15 +158,31 @@ def process_tool_output(state: AgentState):
                         if tc["name"] in ["log_interaction", "edit_interaction"]:
                             try:
                                 import json
-                                # ToolMessage content is a string. If it's a dict, update form_data.
-                                content = last_message.content.replace("'", "\"")
-                                data = json.loads(content)
-                                if isinstance(data, dict):
-                                    new_form_data = {**state.get("form_data", {}), **data}
+                                # ParsingFailure / SerializationError fix: Use a more robust way to handle tool output
+                                # Content might already be a dict or a JSON string
+                                content = last_message.content
+                                
+                                if isinstance(content, dict):
+                                    data = content
+                                elif isinstance(content, str):
+                                    # Clean common string issues if necessary, but try standard load first
+                                    try:
+                                        data = json.loads(content)
+                                    except json.JSONDecodeError:
+                                        # Fallback for single quotes if the model produced invalid JSON
+                                        cleaned_content = content.replace("'", "\"")
+                                        data = json.loads(cleaned_content)
+                                else:
+                                    data = None
+
+                                if data and isinstance(data, dict):
+                                    # UndefinedState fix: Ensure we don't nullify existing form data
+                                    current_form_data = state.get("form_data", {}) or {}
+                                    new_form_data = {**current_form_data, **data}
                                     return {"form_data": new_form_data}
                             except Exception as e:
-                                print(f"Error parsing tool output: {e}")
-                        break
+                                print(f"Error parsing tool output from {tc['name']}: {e}")
+                            break
     return {}
 
 # Define the logic to determine whether to continue or stop

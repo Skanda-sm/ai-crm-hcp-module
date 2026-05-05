@@ -65,7 +65,13 @@ const interactionSlice = createSlice({
       })
       .addCase(sendMessage.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message;
+        // ErrorHandling fix: Extract more detailed error message if available
+        const errorDetail = action.payload?.detail?.message || action.error.message;
+        state.error = errorDetail;
+        state.chatHistory.push({ 
+          role: 'assistant', 
+          content: `Sorry, I encountered an error: ${errorDetail}. Please try again.` 
+        });
       });
   }
 });

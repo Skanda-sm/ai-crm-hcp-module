@@ -41,7 +41,7 @@ const AIAssistant = () => {
           </div>
           <div>
             <h3 style={{ fontSize: '1.125rem', fontWeight: 700 }}>AI Assistant</h3>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Powered by Gemma-2 9B</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Powered by Llama 3.3 70B</p>
           </div>
         </div>
       </div>
@@ -125,6 +125,7 @@ const AIAssistant = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            aria-label="Chat input"
             style={{ 
               paddingRight: '3.5rem', 
               height: '3.5rem', 
@@ -135,6 +136,7 @@ const AIAssistant = () => {
           <button 
             onClick={handleSend}
             disabled={loading || !input.trim()}
+            aria-label="Send message"
             style={{
               position: 'absolute',
               right: '8px',

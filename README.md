@@ -8,14 +8,14 @@ An intelligent, premium Customer Relationship Management (CRM) tool specifically
 - **LangGraph Integration**: Uses a state-of-the-art agentic workflow to manage complex multi-turn interactions and tool calls.
 - **Premium Design System**: A high-end UI built with glassmorphism, the **Outfit** font family, and smooth animations.
 - **Session-Based Context**: The AI assistant remembers previous conversation context for a truly conversational experience.
-- **MySQL Persistence**: Full integration with MySQL for robust data management.
+- **SQLite Persistence**: Ships with SQLite out-of-the-box (zero config). Easily switchable to MySQL/PostgreSQL via `.env`.
 
 ## 🛠 Tech Stack
 
-- **Frontend**: React (Vite), Redux Toolkit, Framer Motion, Lucide React.
-- **Backend**: FastAPI, SQLAlchemy, MySQL.
-- **AI Agent**: LangGraph, Groq (**Llama 3.3 70B Versatile**).
-- **Styling**: Vanilla CSS (Premium Modern Design).
+- **Frontend**: React (Vite), Redux Toolkit, Framer Motion, Lucide React
+- **Backend**: FastAPI, SQLAlchemy, SQLite (default) / MySQL (optional)
+- **AI Agent**: LangGraph, Groq (**Llama 3.3 70B Versatile**)
+- **Styling**: Vanilla CSS (Premium Modern Design)
 
 ---
 
@@ -24,56 +24,95 @@ An intelligent, premium Customer Relationship Management (CRM) tool specifically
 ### Prerequisites
 - Python 3.9+
 - Node.js 18+
-- MySQL Server running locally
-- A Groq API Key (get one at [console.groq.com](https://console.groq.com/))
+- A Groq API Key — get one free at [console.groq.com](https://console.groq.com/)
+- *(Optional)* MySQL Server — only needed if you want to use MySQL instead of SQLite
+
+---
 
 ### 1. Backend Setup (FastAPI)
 
-1.  Navigate to the `backend` directory:
-    ```bash
-    cd backend
-    ```
-2.  Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-3.  Configure your `.env` file:
-    ```env
-    DATABASE_URL=mysql+pymysql://root:@localhost:3306/crm_hcp
-    GROQ_API_KEY=your_api_key_here
-    ```
-    *Note: Ensure you have created a database named `crm_hcp` in your MySQL instance.*
-4.  Start the FastAPI server:
-    ```bash
-    python -m uvicorn main:app --reload
-    ```
+1. Navigate to the `backend` directory:
+   ```bash
+   cd backend
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Configure the `.env` file (already present — just update your API key):
+   ```env
+   # Default: SQLite — no extra setup required
+   DATABASE_URL=sqlite:///./crm_hcp.db
+
+   # Your Groq API key
+   GROQ_API_KEY=your_groq_api_key_here
+
+   # Allowed frontend origins
+   CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+
+   # LLM model to use via Groq
+   LLM_MODEL=llama-3.3-70b-versatile
+   ```
+
+   > **Want MySQL instead?**  
+   > Create a database named `crm_hcp`, then change `DATABASE_URL` to:  
+   > `DATABASE_URL=mysql+pymysql://root:<password>@localhost:3306/crm_hcp`
+
+4. Start the FastAPI server:
+   ```bash
+   python -m uvicorn main:app --reload
+   ```
+   The API will be live at **http://localhost:8000**
+
+---
 
 ### 2. Frontend Setup (React)
 
-1.  Navigate to the `frontend` directory:
-    ```bash
-    cd frontend
-    ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
-3.  Start the development server:
-    ```bash
-    npm run dev
-    ```
+1. Navigate to the `frontend` directory:
+   ```bash
+   cd frontend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+   The app will open at **http://localhost:5173**
+
+---
+
+## 🌐 API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/` | Health check |
+| `GET` | `/interactions/` | List all logged interactions |
+| `POST` | `/interactions/` | Save a new interaction record |
+| `GET` | `/hcps/` | List all Healthcare Professionals |
+| `POST` | `/chat/` | Send a message to the AI agent |
+
+Interactive API docs available at **http://localhost:8000/docs**
 
 ---
 
 ## 🤖 AI Agent & Tools
 
-The agent is powered by **LangGraph** and utilizes the following specialized tools:
+The agent is powered by **LangGraph** and uses the following specialized tools:
 
-1.  **`log_interaction`**: Extracts fields from unstructured text (HCP Name, Topics, Sentiment, etc.).
-2.  **`edit_interaction`**: Allows users to modify specific fields using natural language.
-3.  **`search_hcp`**: Look up Healthcare Professionals in the system database.
-4.  **`get_materials`**: Retrieve a list of available samples and promotional materials.
-5.  **`suggest_followups`**: Generates AI-driven next steps based on the discussion context.
+| Tool | Description |
+|------|-------------|
+| `log_interaction` | Extracts fields from natural language (HCP Name, Date, Time, Topics, Sentiment, etc.) |
+| `edit_interaction` | Modifies a specific field via natural language command |
+| `search_hcp` | Look up Healthcare Professionals by name or specialty |
+| `get_materials` | Retrieve available samples and promotional materials |
+| `suggest_followups` | Generate AI-driven next steps based on discussion topics |
 
 ---
 
@@ -84,14 +123,16 @@ Assisment/
 ├── backend/
 │   ├── main.py          # FastAPI entry point & API endpoints
 │   ├── agent.py         # LangGraph logic, Agent definition & Tools
-│   ├── models.py        # SQLAlchemy Database models (MySQL)
-│   ├── schemas.py       # Pydantic data validation schemas
-│   ├── database.py      # Database engine & Session configuration
-│   └── .env             # Environment variables (API Keys, DB URL)
+│   ├── models.py        # SQLAlchemy ORM models
+│   ├── schemas.py       # Pydantic validation schemas
+│   ├── database.py      # DB engine & session (SQLite/MySQL auto-detect)
+│   ├── crm_hcp.db       # SQLite database (auto-created on first run)
+│   ├── requirements.txt # Python dependencies
+│   └── .env             # Environment variables (API key, DB URL, etc.)
 ├── frontend/
 │   ├── src/
 │   │   ├── components/  # React components (InteractionForm, AIAssistant)
-│   │   ├── redux/       # Redux store & Interaction slices
+│   │   ├── redux/       # Redux store & interaction slice
 │   │   ├── App.jsx      # Root application component
 │   │   └── index.css    # Premium Design System & Global Styles
 │   └── package.json     # Frontend dependencies
